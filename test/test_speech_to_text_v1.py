@@ -55,6 +55,92 @@ def test_get_model():
     assert len(responses.calls) == 1
 
 
+@responses.activate
+def test_sessions():
+    speech_to_text = watson_developer_cloud.SpeechToTextV1(
+        username="username", password="password")
+    sessions_url = 'https://stream.watsonplatform.net/speech-to-text/api/v1/sessions'
+    session_id = "1234567890"
+
+    mock_create_response = {
+        "new_session_uri": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id,
+        "observe_result": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/observe_result",
+        "recognize": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/recognize",
+        "recognizeWS": "wss://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/recognize",
+        "session_id": session_id,
+        "validate_grammar": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/validate_grammar"
+    }
+    responses.add(responses.POST,
+                  sessions_url,
+                  body=json.dumps(mock_create_response),
+                  status=200,
+                  content_type='application/json')
+    response = speech_to_text.create_session(model='es-ES_BroadbandModel')
+    assert len(responses.calls) == 1
+    assert response == mock_create_response
+
+    mock_get_response = {
+        "session": {
+            "model": "https://stream.watsonplatform.net/speech-to-text/api/v1/models/en-US_BroadbandModel",
+            "observe_result": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/observe_result",
+            "recognize": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/recognize",
+            "recognizeWS": "wss://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/recognize",
+            "state": "initialized",
+            "validate_grammar": "https://stream.watsonplatform.net/speech-to-text/api/v1/sessions/" + session_id + "/validate_grammar"
+        }
+    }
+    responses.add(responses.GET,
+                  "{0}/{1}/recognize".format(sessions_url, session_id),
+                  body=json.dumps(mock_get_response),
+                  status=200,
+                  content_type='application/json')
+    response = speech_to_text.get_session(session_id=session_id)
+    assert len(responses.calls) == 2
+    assert response == mock_get_response
+
+    responses.add(responses.DELETE,
+                  "{0}/{1}".format(sessions_url, session_id),
+                  status=204)
+    speech_to_text.delete_session(session_id=session_id)
+    assert len(responses.calls) == 3
+
+
+@responses.activate
+def test_sessions_success():
+    speech_to_text = watson_developer_cloud.SpeechToTextV1(
+        username="username", password="password")
+    sessions_url = 'https://stream.watsonplatform.net/speech-to-text/api/v1/sessions'
+    session_id = "1234567890"
+
+    mock_recognize_response = {
+        "results":[
+            {
+                "alternatives":[
+                    {
+                        "transcript": "thunderstorms could produce large hail ' \
+                         'isolated tornadoes and heavy rain "
+                    }
+                ],
+                "final": True
+            }
+        ],
+        "result_index": 0
+    }
+    responses.add(responses.POST,
+                  "{0}/{1}/recognize".format(sessions_url, session_id),
+                  status=200,
+                  body=json.dumps(mock_recognize_response),
+                  content_type='application/json')
+
+    with open(os.path.join(os.path.dirname(__file__), '../resources/speech.wav'), 'rb') as audio_file:
+        response = speech_to_text.recognize_session(
+            session_id, audio=audio_file, content_type='audio/l16; rate=44100')
+
+    assert len(responses.calls) == 1
+    assert response == mock_recognize_response
+    assert responses.calls[0].request.headers['content-type'] == 'audio/l16; rate=44100'
+
+
 def _decode_body(body):
     try:
         return body.decode('utf-8')
@@ -65,7 +151,7 @@ def _decode_body(body):
 @responses.activate
 def test_custom_model():
     customization_url = 'https://stream.watsonplatform.net/speech-to-text/api/v1/customizations'
-    train_url = "{0}/{1}/train".format(customization_url,'customid')
+    train_url = "{0}/{1}/train".format(customization_url, 'customid')
 
     responses.add(responses.GET, customization_url,
                   body='{"get response": "yep"}', status=200,
