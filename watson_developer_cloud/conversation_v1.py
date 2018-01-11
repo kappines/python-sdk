@@ -1140,7 +1140,7 @@ class ConversationV1(WatsonService):
                            output=None,
                            context=None,
                            metadata=None,
-                           next_step=None,
+                           go_to=None,
                            actions=None,
                            title=None,
                            node_type=None,
@@ -1160,7 +1160,7 @@ class ConversationV1(WatsonService):
         :param object output: The output of the dialog node.
         :param object context: The context for the dialog node.
         :param object metadata: The metadata for the dialog node.
-        :param DialogNodeNextStep next_step: The next step to execute following this dialog node.
+        :param DialogNodeNextStep go_to: The next step to execute following this dialog node.
         :param list[DialogNodeAction] actions: The actions for the dialog node.
         :param str title: The alias used to identify the dialog node.
         :param str node_type: How the dialog node is processed.
@@ -1173,8 +1173,8 @@ class ConversationV1(WatsonService):
             raise ValueError('workspace_id must be provided')
         if dialog_node is None:
             raise ValueError('dialog_node must be provided')
-        if next_step is not None:
-            next_step = self._convert_model(next_step)
+        if go_to is not None:
+            go_to = self._convert_model(go_to)
         if actions is not None:
             actions = [self._convert_model(x) for x in actions]
         params = {'version': self.version}
@@ -1187,7 +1187,7 @@ class ConversationV1(WatsonService):
             'output': output,
             'context': context,
             'metadata': metadata,
-            'next_step': next_step,
+            'go_to': go_to,
             'actions': actions,
             'title': title,
             'type': node_type,
@@ -1287,7 +1287,7 @@ class ConversationV1(WatsonService):
                            new_output=None,
                            new_context=None,
                            new_metadata=None,
-                           new_next_step=None,
+                           new_go_to=None,
                            new_title=None,
                            new_type=None,
                            new_event_name=None,
@@ -1308,7 +1308,7 @@ class ConversationV1(WatsonService):
         :param object new_output: The output of the dialog node.
         :param object new_context: The context for the dialog node.
         :param object new_metadata: The metadata for the dialog node.
-        :param DialogNodeNextStep new_next_step: The next step to execute following this dialog node.
+        :param DialogNodeNextStep new_go_to: The next step to execute following this dialog node.
         :param str new_title: The alias used to identify the dialog node.
         :param str new_type: How the node is processed.
         :param str new_event_name: How an `event_handler` node is processed.
@@ -1323,8 +1323,8 @@ class ConversationV1(WatsonService):
             raise ValueError('dialog_node must be provided')
         if new_dialog_node is None:
             raise ValueError('new_dialog_node must be provided')
-        if new_next_step is not None:
-            new_next_step = self._convert_model(new_next_step)
+        if new_go_to is not None:
+            new_go_to = self._convert_model(new_go_to)
         if new_actions is not None:
             new_actions = [self._convert_model(x) for x in new_actions]
         params = {'version': self.version}
@@ -1337,7 +1337,7 @@ class ConversationV1(WatsonService):
             'output': new_output,
             'context': new_context,
             'metadata': new_metadata,
-            'next_step': new_next_step,
+            'go_to': new_go_to,
             'title': new_title,
             'type': new_type,
             'event_name': new_event_name,
@@ -1884,7 +1884,7 @@ class CreateDialogNode(object):
     :attr object output: (optional) The output of the dialog node.
     :attr object context: (optional) The context for the dialog node.
     :attr object metadata: (optional) The metadata for the dialog node.
-    :attr DialogNodeNextStep next_step: (optional) The next step to execute following this dialog node.
+    :attr DialogNodeNextStep go_to: (optional) The next step to execute following this dialog node.
     :attr list[DialogNodeAction] actions: (optional) The actions for the dialog node.
     :attr str title: (optional) The alias used to identify the dialog node.
     :attr str node_type: (optional) How the dialog node is processed.
@@ -1901,7 +1901,7 @@ class CreateDialogNode(object):
                  output=None,
                  context=None,
                  metadata=None,
-                 next_step=None,
+                 go_to=None,
                  actions=None,
                  title=None,
                  node_type=None,
@@ -1918,7 +1918,7 @@ class CreateDialogNode(object):
         :param object output: (optional) The output of the dialog node.
         :param object context: (optional) The context for the dialog node.
         :param object metadata: (optional) The metadata for the dialog node.
-        :param DialogNodeNextStep next_step: (optional) The next step to execute following this dialog node.
+        :param DialogNodeNextStep go_to: (optional) The next step to execute following this dialog node.
         :param list[DialogNodeAction] actions: (optional) The actions for the dialog node.
         :param str title: (optional) The alias used to identify the dialog node.
         :param str node_type: (optional) How the dialog node is processed.
@@ -1933,7 +1933,7 @@ class CreateDialogNode(object):
         self.output = output
         self.context = context
         self.metadata = metadata
-        self.next_step = next_step
+        self.go_to = go_to
         self.actions = actions
         self.title = title
         self.node_type = node_type
@@ -1964,9 +1964,9 @@ class CreateDialogNode(object):
             args['context'] = _dict['context']
         if 'metadata' in _dict:
             args['metadata'] = _dict['metadata']
-        if 'next_step' in _dict:
-            args['next_step'] = DialogNodeNextStep._from_dict(
-                _dict['next_step'])
+        if 'go_to' in _dict:
+            args['go_to'] = DialogNodeNextStep._from_dict(
+                _dict['go_to'])
         if 'actions' in _dict:
             args['actions'] = [
                 DialogNodeAction._from_dict(x) for x in _dict['actions']
@@ -2001,8 +2001,8 @@ class CreateDialogNode(object):
             _dict['context'] = self.context
         if hasattr(self, 'metadata') and self.metadata is not None:
             _dict['metadata'] = self.metadata
-        if hasattr(self, 'next_step') and self.next_step is not None:
-            _dict['next_step'] = self.next_step._to_dict()
+        if hasattr(self, 'go_to') and self.go_to is not None:
+            _dict['go_to'] = self.go_to._to_dict()
         if hasattr(self, 'actions') and self.actions is not None:
             _dict['actions'] = [x._to_dict() for x in self.actions]
         if hasattr(self, 'title') and self.title is not None:
@@ -2318,7 +2318,7 @@ class DialogNode(object):
     :attr object output: The output of the dialog node.
     :attr object context: The context (if defined) for the dialog node.
     :attr object metadata: The metadata (if any) for the dialog node.
-    :attr DialogNodeNextStep next_step: The next step to execute following this dialog node.
+    :attr DialogNodeNextStep go_to: The next step to execute following this dialog node.
     :attr datetime created: The timestamp for creation of the dialog node.
     :attr datetime updated: (optional) The timestamp for the most recent update to the dialog node.
     :attr list[DialogNodeAction] actions: (optional) The actions for the dialog node.
@@ -2337,7 +2337,7 @@ class DialogNode(object):
                  output,
                  context,
                  metadata,
-                 next_step,
+                 go_to,
                  created,
                  title,
                  updated=None,
@@ -2356,7 +2356,7 @@ class DialogNode(object):
         :param object output: The output of the dialog node.
         :param object context: The context (if defined) for the dialog node.
         :param object metadata: The metadata (if any) for the dialog node.
-        :param DialogNodeNextStep next_step: The next step to execute following this dialog node.
+        :param DialogNodeNextStep go_to: The next step to execute following this dialog node.
         :param datetime created: The timestamp for creation of the dialog node.
         :param str title: The alias used to identify the dialog node.
         :param datetime updated: (optional) The timestamp for the most recent update to the dialog node.
@@ -2373,7 +2373,7 @@ class DialogNode(object):
         self.output = output
         self.context = context
         self.metadata = metadata
-        self.next_step = next_step
+        self.go_to = go_to
         self.created = created
         self.updated = updated
         self.actions = actions
@@ -2430,12 +2430,12 @@ class DialogNode(object):
         else:
             raise ValueError(
                 'Required property \'metadata\' not present in DialogNode JSON')
-        if 'next_step' in _dict:
-            args['next_step'] = DialogNodeNextStep._from_dict(
-                _dict['next_step'])
+        if 'go_to' in _dict:
+            args['go_to'] = DialogNodeNextStep._from_dict(
+                _dict['go_to'])
         else:
             raise ValueError(
-                'Required property \'next_step\' not present in DialogNode JSON'
+                'Required property \'go_to\' not present in DialogNode JSON'
             )
         if 'created' in _dict:
             args['created'] = string_to_datetime(_dict['created'])
@@ -2481,8 +2481,8 @@ class DialogNode(object):
             _dict['context'] = self.context
         if hasattr(self, 'metadata') and self.metadata is not None:
             _dict['metadata'] = self.metadata
-        if hasattr(self, 'next_step') and self.next_step is not None:
-            _dict['next_step'] = self.next_step._to_dict()
+        if hasattr(self, 'go_to') and self.go_to is not None:
+            _dict['go_to'] = self.go_to._to_dict()
         if hasattr(self, 'created') and self.created is not None:
             _dict['created'] = datetime_to_string(self.created)
         if hasattr(self, 'updated') and self.updated is not None:
@@ -2667,7 +2667,7 @@ class DialogNodeNextStep(object):
     """
     The next step to execute following this dialog node.
 
-    :attr str behavior: How the `next_step` reference is processed.
+    :attr str behavior: How the `go_to` reference is processed.
     :attr str dialog_node: (optional) The ID of the dialog node to process next.
     :attr str selector: (optional) Which part of the dialog node to process next.
     """
@@ -2676,7 +2676,7 @@ class DialogNodeNextStep(object):
         """
         Initialize a DialogNodeNextStep object.
 
-        :param str behavior: How the `next_step` reference is processed.
+        :param str behavior: How the `go_to` reference is processed.
         :param str dialog_node: (optional) The ID of the dialog node to process next.
         :param str selector: (optional) Which part of the dialog node to process next.
         """
@@ -4234,7 +4234,7 @@ class RuntimeEntity(object):
         return _dict
 
     def __setattr__(self, name, value):
-        properties = {
+        properties={
             'entity', 'location', 'value', 'confidence', 'metadata', 'groups'
         }
         if not hasattr(self, '_additionalProperties'):
@@ -4703,7 +4703,7 @@ class ValueExport(object):
     :attr object metadata: (optional) Any metadata related to the entity value.
     :attr datetime created: The timestamp for creation of the entity value.
     :attr datetime updated: The timestamp for the last update to the entity value.
-    :attr list[str] synonyms: (optional) An array of synonyms for the entity value.
+    :attr list[str] synonyms: (optional) An array of synonyms.
     :attr list[str] patterns: (optional) An array of patterns for the entity value. A pattern is specified as a regular expression.
     :attr str value_type: Specifies the type of value (`synonyms` or `patterns`). The default value is `synonyms`.
     """
@@ -4724,7 +4724,7 @@ class ValueExport(object):
         :param datetime updated: The timestamp for the last update to the entity value.
         :param str value_type: Specifies the type of value (`synonyms` or `patterns`). The default value is `synonyms`.
         :param object metadata: (optional) Any metadata related to the entity value.
-        :param list[str] synonyms: (optional) An array of synonyms for the entity value.
+        :param list[str] synonyms: (optional) An array of synonyms.
         :param list[str] patterns: (optional) An array of patterns for the entity value. A pattern is specified as a regular expression.
         """
         self.value_text = value_text

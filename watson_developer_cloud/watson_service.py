@@ -14,6 +14,8 @@
 import json as json_import
 import platform
 import os
+
+import datetime
 import requests
 import sys
 from requests.structures import CaseInsensitiveDict
@@ -416,9 +418,12 @@ class WatsonService(object):
                 return response_json
             return response
         else:
-            if response.status_code == 401:
-                error_message = 'Unauthorized: Access is denied due to ' \
-                                'invalid credentials '
+            if response.status_code == 429:
+                error_message = 'Rate limit of ' + response.headers['X-RateLimit-Limit'] + \
+                                ' requests exceeded. Reset at: ' + \
+                                datetime.datetime.fromtimestamp(int(response.headers['X-RateLimit-Reset'])).strftime('%Y-%m-%d %H:%M:%S')
+            elif response.status_code == 401:
+                error_message = 'Unauthorized: Access is denied due to invalid credentials '
             else:
                 error_message = self._get_error_message(response)
             error_info = self._get_error_info(response)
