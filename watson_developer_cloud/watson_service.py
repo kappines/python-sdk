@@ -1,4 +1,4 @@
-# Copyright 2017 IBM All Rights Reserved.
+# Copyright 2016 IBM All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json as json_import
-import platform
 import os
 import requests
 import sys
 from requests.structures import CaseInsensitiveDict
-import dateutil.parser as date_parser
 
 try:
     from http.cookiejar import CookieJar  # Python 3
@@ -46,50 +44,11 @@ def load_from_vcap_services(service_name):
 
 
 class WatsonException(Exception):
-    """
-    Custom exception class for Watson Services.
-    """
     pass
-
-
-class WatsonApiException(WatsonException):
-    """
-    Custom exception class for errors returned from Watson APIs.
-
-    :param int code: The HTTP status code returned.
-    :param str message: A message describing the error.
-    :param dict info: A dictionary of additional information about the error.
-    """
-    def __init__(self, code, message, info=None):
-        # Call the base class constructor with the parameters it needs
-        super(WatsonApiException, self).__init__(message)
-        self.message = message
-        self.code = code
-        self.info = info
-
-    def __str__(self):
-        return 'Error: ' + self.message + ', Code: ' + str(self.code)
 
 
 class WatsonInvalidArgument(WatsonException):
     pass
-
-def datetime_to_string(datetime):
-    """
-    Serializes a datetime to a string.
-    :param datetime: datetime value
-    :return: string. containing iso8601 format date string
-    """
-    return datetime.isoformat().replace('+00:00', 'Z')
-
-
-def string_to_datetime(string):
-    """
-    Deserializes string to datetime.
-    :param string: string containing datetime in iso8601 format
-    :return: datetime.
-    """
-    return date_parser.parse(string)
 
 
 def _cleanup_param_value(value):
@@ -124,7 +83,7 @@ def _convert_boolean_values(dictionary):
     return dictionary
 
 
-class WatsonService(object):
+class WatsonDeveloperCloudService(object):
     def __init__(self, vcap_services_name, url, username=None, password=None,
                  use_vcap_services=True, api_key=None,
                  x_watson_learning_opt_out=False):
@@ -142,21 +101,11 @@ class WatsonService(object):
         self.api_key = None
         self.username = None
         self.password = None
-        self.default_headers = None
-        self.http_config = {}
-
-        user_agent_string = 'watson-apis-python-sdk-' + __version__ # SDK version
-        user_agent_string += ' ' + platform.system() # OS
-        user_agent_string += ' ' + platform.release() # OS version
-        user_agent_string += ' ' + platform.python_version() # Python version
-        self.user_agent_header = {'user-agent': user_agent_string}
-
-        if x_watson_learning_opt_out:
-            self.default_headers = {'x-watson-learning-opt-out': 'true'}
+        self.x_watson_learning_opt_out = x_watson_learning_opt_out
 
         if api_key is not None:
             if username is not None or password is not None:
-                raise ValueError(
+                raise WatsonInvalidArgument(
                     'Cannot set api_key and username and password together')
             self.set_api_key(api_key)
         else:
@@ -179,9 +128,10 @@ class WatsonService(object):
 
         if (self.username is None or self.password is None)\
                 and self.api_key is None:
-            raise ValueError(
+            raise WatsonException(
                 'You must specify your username and password service '
-                'credentials (Note: these are different from your Bluemix id)')
+                'credentials ' +
+                '(Note: these are different from your Bluemix id)')
 
     def set_username_and_password(self, username=None, password=None):
         if username == 'YOUR SERVICE USERNAME':
@@ -203,25 +153,6 @@ class WatsonService(object):
     def set_url(self, url):
         self.url = url
 
-    def set_default_headers(self, headers):
-        """
-        Set http headers to be sent in every request.
-        :param headers: A dictionary of header names and values
-        """
-        if isinstance(headers, dict):
-            self.default_headers = headers
-        else:
-            raise TypeError("headers parameter must be a dictionary")
-
-    def set_http_config(self, http_config):
-        """
-        Sets the http client config like timeout, proxies, etc.
-        """
-        if isinstance(http_config, dict):
-            self.http_config = http_config
-        else:
-            raise TypeError("http_config parameter must be a dictionary")
-
     # Could make this compute the label_id based on the variable name of the
     # dictionary passed in (using **kwargs), but
     # this might be confusing to understand.
@@ -232,27 +163,13 @@ class WatsonService(object):
         return dictionary
 
     @staticmethod
-    def _convert_model(val):
-        if hasattr(val, "_to_dict"):
-            return val._to_dict()
-        return val
-
-    @staticmethod
-    def _convert_list(val):
-        if isinstance(val, list):
-            return ",".join(val)
-        return val
-
-    @staticmethod
-    def _encode_path_vars(*args):
-        return (requests.utils.quote(x, safe='') for x in args)
-
-    @staticmethod
     def _get_error_message(response):
         """
         Gets the error message from a JSON response.
-        :return: the error message
-        :rtype: string
+        {
+            code: 400
+            error: 'Bad request'
+        }
         """
         error_message = 'Unknown error'
         try:
@@ -260,36 +177,22 @@ class WatsonService(object):
             if 'error' in error_json:
                 if isinstance(error_json['error'], dict) and 'description' in \
                         error_json['error']:
-                    error_message = error_json['error']['description']
+                    error_message = 'Error: ' + error_json['error'][
+                        'description']
                 else:
-                    error_message = error_json['error']
+                    error_message = 'Error: ' + error_json['error']
             elif 'error_message' in error_json:
-                error_message = error_json['error_message']
+                error_message = 'Error: ' + error_json['error_message']
             elif 'msg' in error_json:
-                error_message = error_json['msg']
+                error_message = 'Error: ' + error_json['msg']
             elif 'statusInfo' in error_json:
-                error_message = error_json['statusInfo']
+                error_message = 'Error: ' + error_json['statusInfo']
+            if 'description' in error_json:
+                error_message += ', Description: ' + error_json['description']
+            error_message += ', Code: ' + str(response.status_code)
             return error_message
         except:
-            return response.text or error_message
-
-
-    @staticmethod
-    def _get_error_info(response):
-        """
-        Gets the error info (if any) from a JSON response.
-        :return: A `dict` containing additional information about the error.
-        :rtype: dict
-        """
-        info_keys = ['code_description', 'description', 'errors', 'help',
-                     'sub_code', 'warnings']
-        error_info = {}
-        try:
-            error_json = response.json()
-            error_info = {k:v for k, v in error_json.items() if k in info_keys}
-        except:
-            pass
-        return error_info if any(error_info) else None
+            return {'error': response.text or error_message, 'code': str(response.status_code)}
 
 
     def _alchemy_html_request(self, method_name=None, url=None, html=None,
@@ -357,9 +260,8 @@ class WatsonService(object):
 
         input_headers = _remove_null_values(headers) if headers else {}
 
-        headers = CaseInsensitiveDict(self.user_agent_header)
-        if self.default_headers is not None:
-            headers.update(self.default_headers)
+        headers = CaseInsensitiveDict(
+            {'user-agent': 'watson-developer-cloud-python-' + __version__})
         if accept_json:
             headers['accept'] = 'application/json'
         headers.update(input_headers)
@@ -391,7 +293,9 @@ class WatsonService(object):
             else:
                 params['api_key'] = self.api_key
 
-        kwargs = dict(kwargs, **self.http_config)
+        if self.x_watson_learning_opt_out:
+            headers['x-watson-learning-opt-out'] = 'true'
+
         response = requests.request(method=method, url=full_url,
                                     cookies=self.jar, auth=auth,
                                     headers=headers,
@@ -399,20 +303,17 @@ class WatsonService(object):
                                     **kwargs)
 
         if 200 <= response.status_code <= 299:
-            if response.status_code == 204:
-                return None
             if accept_json:
                 response_json = response.json()
                 if 'status' in response_json and response_json['status'] \
                         == 'ERROR':
-                    status_code = 400
+                    response.status_code = 400
                     error_message = 'Unknown error'
-
                     if 'statusInfo' in response_json:
                         error_message = response_json['statusInfo']
                     if error_message == 'invalid-api-key':
-                        status_code = 401
-                    raise WatsonApiException(status_code, error_message)
+                        response.status_code = 401
+                    raise WatsonException('Error: ' + error_message)
                 return response_json
             return response
         else:
@@ -421,6 +322,4 @@ class WatsonService(object):
                                 'invalid credentials '
             else:
                 error_message = self._get_error_message(response)
-            error_info = self._get_error_info(response)
-            raise WatsonApiException(response.status_code, error_message,
-                                     error_info)
+            raise WatsonException(error_message)
